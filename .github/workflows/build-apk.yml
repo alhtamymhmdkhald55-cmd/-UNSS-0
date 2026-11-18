@@ -25,17 +25,16 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Extract updated project
+      - name: Extract project
         shell: bash
         run: |
           set -euo pipefail
 
-          ZIP=$(find . -maxdepth 4 -type f \
-            -name "Anis_UNSS_fixed.zip" -print -quit)
+          ZIP="./Anis_UNSS_location_quran_fixed.zip"
 
-          if [ -z "$ZIP" ]; then
-            echo "Project ZIP not found"
-            find . -maxdepth 4 -type f -name "*.zip"
+          if [ ! -f "$ZIP" ]; then
+            echo "ZIP not found. Available ZIP files:"
+            find . -type f -iname "*.zip"
             exit 1
           fi
 
@@ -46,7 +45,7 @@ jobs:
             -name package.json -print -quit)
 
           if [ -z "$PKG" ]; then
-            echo "package.json missing inside ZIP"
+            echo "package.json not found inside ZIP"
             exit 1
           fi
 
@@ -82,7 +81,7 @@ jobs:
             mkdir -p "android/app/src/main/res/mipmap-$d"
             if [ -d "resources/mipmap-$d" ]; then
               cp resources/mipmap-$d/*.png \
-                "android/app/src/main/res/mipmap-$d/"
+                "android/app/src/main/res/mipmap-$d/" || true
             fi
           done
 
@@ -90,7 +89,7 @@ jobs:
             mkdir -p "android/app/src/main/res/drawable-$d"
             if [ -d "resources/drawable-$d" ]; then
               cp resources/drawable-$d/*.png \
-                "android/app/src/main/res/drawable-$d/"
+                "android/app/src/main/res/drawable-$d/" || true
             fi
           done
 
