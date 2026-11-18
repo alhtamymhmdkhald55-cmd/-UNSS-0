@@ -26,14 +26,16 @@ jobs:
           java-version: '17'
 
       - name: Extract updated project
+        shell: bash
         run: |
-          set -e
+          set -euo pipefail
+
           ZIP=$(find . -maxdepth 4 -type f \
-            -name "Anis_UNSS_prayer_time_sync_fixed.zip" \
-            -print -quit)
+            -name "Anis_UNSS_fixed.zip" -print -quit)
 
           if [ -z "$ZIP" ]; then
-            echo "Updated ZIP not found"
+            echo "Project ZIP not found"
+            find . -maxdepth 4 -type f -name "*.zip"
             exit 1
           fi
 
@@ -43,8 +45,12 @@ jobs:
           PKG=$(find extracted -type f \
             -name package.json -print -quit)
 
-          test -n "$PKG"
-          DIR=$(dirname "$PKG")
+          if [ -z "$PKG" ]; then
+            echo "package.json missing inside ZIP"
+            exit 1
+          fi
+
+          DIR="$(dirname "$PKG")"
 
           test -f "$DIR/capacitor.config.json"
           test -f "$DIR/www/index.html"
@@ -62,10 +68,13 @@ jobs:
 
       - name: Install native components
         working-directory: ${{ env.PROJECT_DIR }}
-        run: bash native/android/install-native.sh
+        run: |
+          chmod +x native/android/install-native.sh
+          bash native/android/install-native.sh
 
       - name: Copy icons and sounds
         working-directory: ${{ env.PROJECT_DIR }}
+        shell: bash
         run: |
           set -e
 
@@ -86,8 +95,12 @@ jobs:
           done
 
           mkdir -p android/app/src/main/res/raw
-          cp resources/sounds/*.wav android/app/src/main/res/raw/
-          cp resources/sounds/adhan.mp3 android/app/src/main/res/raw/
+
+          if [ -d resources/sounds ]; then
+            find resources/sounds -maxdepth 1 -type f \
+              \( -name "*.wav" -o -name "*.mp3" \) \
+              -exec cp {} android/app/src/main/res/raw/ \;
+          fi
 
       - name: Sync Android
         working-directory: ${{ env.PROJECT_DIR }}
@@ -102,6 +115,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: Anis-UNSS-Prayer-Fix
+          name: Anis-UNSS-APK
           path: ${{ env.PROJECT_DIR }}/android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
